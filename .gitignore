@@ -36,3 +36,10 @@ pnpm-debug.log*
 next-env.d.ts
 
 /app/generated/prisma
+
+# claude
+.claude/
+CLAUDE.md
+
+# project spec
+project-ocr.md
