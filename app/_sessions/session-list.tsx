@@ -27,10 +27,7 @@ const STATUT_LABELS: Record<string, string> = {
   exporte: "Exportée",
 }
 
-const STATUT_VARIANTS: Record<
-  string,
-  "default" | "secondary" | "outline"
-> = {
+const STATUT_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
   en_cours: "outline",
   valide: "secondary",
   exporte: "default",
@@ -39,6 +36,7 @@ const STATUT_VARIANTS: Record<
 export async function SessionList({ basePath }: { basePath: string }) {
   const [sessions, templates] = await Promise.all([
     prisma.tractageSession.findMany({
+      where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
       include: { template: true, _count: { select: { entries: true } } },
     }),
@@ -54,8 +52,8 @@ export async function SessionList({ basePath }: { basePath: string }) {
         <div>
           <h1 className="text-xl font-semibold">Sessions de tractage</h1>
           <p className="text-sm text-muted-foreground">
-            Une session correspond à une feuille remplie pour un
-            établissement et une date.
+            Une session correspond à une feuille remplie pour un établissement
+            et une date.
           </p>
         </div>
         {sessions.length > 0 && (

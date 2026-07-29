@@ -47,7 +47,7 @@ export async function createEntry(
   await requireAuth()
 
   const tractageSession = await prisma.tractageSession.findUnique({
-    where: { id: sessionId },
+    where: { id: sessionId, deletedAt: null },
     include: { template: { include: { fields: true } } },
   })
 
@@ -90,7 +90,7 @@ export async function updateEntry(
   await requireAuth()
 
   const tractageSession = await prisma.tractageSession.findUnique({
-    where: { id: sessionId },
+    where: { id: sessionId, deletedAt: null },
     include: { template: { include: { fields: true } } },
   })
 
@@ -123,7 +123,7 @@ export async function confirmEntry(
   await requireAuth()
 
   const tractageSession = await prisma.tractageSession.findUnique({
-    where: { id: sessionId },
+    where: { id: sessionId, deletedAt: null },
     include: { template: { include: { fields: true } } },
   })
 
@@ -146,7 +146,9 @@ export async function confirmEntry(
 
   const result = validateEntry(tractageSession.template.fields, stringValues)
   if (!result.success) {
-    return { error: "Corrige les champs invalides avant de valider cette entrée" }
+    return {
+      error: "Corrige les champs invalides avant de valider cette entrée",
+    }
   }
 
   await prisma.entry.update({
@@ -167,7 +169,7 @@ export async function validateSession(
   await requireAuth()
 
   const tractageSession = await prisma.tractageSession.findUnique({
-    where: { id: sessionId },
+    where: { id: sessionId, deletedAt: null },
     include: { entries: true },
   })
 
@@ -205,6 +207,50 @@ export async function validateSession(
   return {}
 }
 
+export async function deleteEntry(
+  entryId: string,
+  sessionId: string
+): Promise<ActionResult> {
+  await requireAuth()
+
+  const entry = await prisma.entry.findUnique({ where: { id: entryId } })
+  if (!entry || entry.sessionId !== sessionId) {
+    return { error: "Entrée introuvable" }
+  }
+
+  await prisma.entry.delete({ where: { id: entryId } })
+
+  revalidatePath(`/admin/sessions/${sessionId}`)
+  revalidatePath(`/agents/sessions/${sessionId}`)
+  revalidatePath(`/sessions/${sessionId}/saisie`)
+  revalidatePath("/admin/verification")
+
+  return {}
+}
+
+export async function deleteSession(sessionId: string): Promise<ActionResult> {
+  await requireAuth()
+
+  const tractageSession = await prisma.tractageSession.findUnique({
+    where: { id: sessionId },
+  })
+
+  if (!tractageSession || tractageSession.deletedAt) {
+    return { error: "Session introuvable" }
+  }
+
+  await prisma.tractageSession.update({
+    where: { id: sessionId },
+    data: { deletedAt: new Date() },
+  })
+
+  revalidatePath("/admin/sessions")
+  revalidatePath("/agents/sessions")
+  revalidatePath("/admin/verification")
+
+  return {}
+}
+
 type ConfirmAllResult = ActionResult & {
   confirmed?: number
   skipped?: number
@@ -216,7 +262,7 @@ export async function confirmAllEntries(
   await requireAuth()
 
   const tractageSession = await prisma.tractageSession.findUnique({
-    where: { id: sessionId },
+    where: { id: sessionId, deletedAt: null },
     include: {
       template: { include: { fields: true } },
       entries: { where: { statut: "a_verifier" } },

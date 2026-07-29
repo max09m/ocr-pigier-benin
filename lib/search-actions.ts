@@ -21,7 +21,10 @@ export async function searchEntities(query: string): Promise<SearchResults> {
 
   const [sessions, templates, users] = await Promise.all([
     prisma.tractageSession.findMany({
-      where: { etablissement: { contains: trimmed, mode: "insensitive" } },
+      where: {
+        etablissement: { contains: trimmed, mode: "insensitive" },
+        deletedAt: null,
+      },
       select: { id: true, etablissement: true, dateTractage: true },
       orderBy: { createdAt: "desc" },
       take: 5,

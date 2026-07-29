@@ -13,7 +13,7 @@ export async function GET(
   const { id } = await params
 
   const tractageSession = await prisma.tractageSession.findUnique({
-    where: { id },
+    where: { id, deletedAt: null },
     include: {
       template: {
         include: {
@@ -41,10 +41,7 @@ export async function GET(
   ])
   sheet.addRow([])
 
-  const headerRow = sheet.addRow([
-    "N°",
-    ...fields.map((field) => field.label),
-  ])
+  const headerRow = sheet.addRow(["N°", ...fields.map((field) => field.label)])
   headerRow.font = { bold: true }
 
   for (const entry of tractageSession.entries) {

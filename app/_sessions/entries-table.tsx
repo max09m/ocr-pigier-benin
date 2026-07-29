@@ -45,6 +45,7 @@ import { formatFieldValue } from "@/lib/format"
 import { entryHasIssues } from "@/lib/validations/entry"
 import { EditEntryDialog } from "./edit-entry-dialog"
 import { ConfirmEntryButton } from "./confirm-entry-button"
+import { DeleteEntryButton } from "./delete-entry-button"
 import type { Entry, Field as FieldModel } from "@/app/generated/prisma/client"
 
 const PAGE_SIZES = [12, 20, 30, 50, 100, 200]
@@ -70,19 +71,17 @@ export function EntriesTable({
         header: "N°",
         cell: ({ row }) => row.original.ligne,
       },
-      ...fields.map(
-        (field): ColumnDef<Entry> => ({
-          id: field.key,
-          header: field.label,
-          cell: ({ row }) => {
-            const valeurs = (row.original.valeurs ?? {}) as Record<
-              string,
-              unknown
-            >
-            return formatFieldValue(field, valeurs[field.key])
-          },
-        })
-      ),
+      ...fields.map((field): ColumnDef<Entry> => ({
+        id: field.key,
+        header: field.label,
+        cell: ({ row }) => {
+          const valeurs = (row.original.valeurs ?? {}) as Record<
+            string,
+            unknown
+          >
+          return formatFieldValue(field, valeurs[field.key])
+        },
+      })),
       {
         id: "actions",
         header: () => <div className="text-right">Actions</div>,
@@ -98,6 +97,10 @@ export function EntriesTable({
               sessionId={sessionId}
               fields={fields}
               entry={row.original}
+            />
+            <DeleteEntryButton
+              sessionId={sessionId}
+              entryId={row.original.id}
             />
           </div>
         ),
@@ -164,10 +167,7 @@ export function EntriesTable({
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
-                    {flexRender(
-                      cell.column.columnDef.cell,
-                      cell.getContext()
-                    )}
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
               </TableRow>

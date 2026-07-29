@@ -9,10 +9,9 @@ import { requireAuth } from "@/lib/session"
 import { s3Client, STORAGE_BUCKET } from "@/lib/s3-client"
 import { mistral, OCR_MODEL, buildOcrSchema } from "@/lib/mistral"
 import { uploadRequestSchema } from "@/lib/validations/upload"
+import { normalizePhone } from "@/lib/validations/entry"
 
-type UploadUrlResult =
-  | { error: string }
-  | { url: string; key: string }
+type UploadUrlResult = { error: string } | { url: string; key: string }
 
 export async function getUploadUrl(input: unknown): Promise<UploadUrlResult> {
   await requireAuth()
@@ -50,10 +49,12 @@ export async function processOcrUpload(
   }
 
   const tractageSession = await prisma.tractageSession.findUnique({
-    where: { id: sessionId },
+    where: { id: sessionId, deletedAt: null },
     include: {
       template: {
-        include: { fields: { where: { actif: true }, orderBy: { ordre: "asc" } } },
+        include: {
+          fields: { where: { actif: true }, orderBy: { ordre: "asc" } },
+        },
       },
       entries: true,
     },
@@ -97,7 +98,10 @@ export async function processOcrUpload(
         for (const field of fields) {
           const value = ligneValeurs[field.key]
           if (value != null && value !== "") {
-            valeurs[field.key] = value as string | number
+            valeurs[field.key] =
+              field.type === "tel"
+                ? normalizePhone(String(value))
+                : (value as string | number)
           }
         }
 

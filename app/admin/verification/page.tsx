@@ -23,7 +23,7 @@ import { ConfirmEntryButton } from "@/app/_sessions/confirm-entry-button"
 
 export default async function VerificationPage() {
   const entries = await prisma.entry.findMany({
-    where: { statut: "a_verifier" },
+    where: { statut: "a_verifier", session: { deletedAt: null } },
     include: {
       session: {
         include: {
@@ -90,7 +90,8 @@ export default async function VerificationPage() {
               <TableRow
                 key={entry.id}
                 className={cn(
-                  hasIssues && "border-l-2 border-l-destructive bg-destructive/5"
+                  hasIssues &&
+                    "border-l-2 border-l-destructive bg-destructive/5"
                 )}
               >
                 <TableCell>

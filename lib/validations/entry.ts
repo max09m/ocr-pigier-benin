@@ -9,8 +9,26 @@ export type EntryValidationResult =
   | { success: true; data: Record<string, string | number> }
   | { success: false; errors: Record<string, string> }
 
-function normalizePhone(raw: string) {
-  return raw.replace(/[\s.-]/g, "")
+export function normalizePhone(raw: string) {
+  let digits = raw.replace(/\D/g, "")
+
+  // Numéro saisi avec l'indicatif international (+229 / 229)
+  if (digits.startsWith("229") && digits.length > 10) {
+    digits = digits.slice(3)
+  }
+
+  if (!digits.startsWith("01")) {
+    // Ancien format à 8 chiffres (sans le préfixe "01" introduit en 2021)
+    if (digits.length === 8) {
+      digits = `01${digits}`
+    }
+    // Préfixe "01" saisi/lu sans le "0" initial (ex: OCR)
+    else if (digits.length === 9 && digits.startsWith("1")) {
+      digits = `0${digits}`
+    }
+  }
+
+  return digits
 }
 
 export function validateEntry(
@@ -89,7 +107,10 @@ export function validateEntry(
   return { success: true, data }
 }
 
-export function entryHasIssues(fields: Field[], valeurs: Record<string, unknown>) {
+export function entryHasIssues(
+  fields: Field[],
+  valeurs: Record<string, unknown>
+) {
   const stringValues = Object.fromEntries(
     fields.map((field) => [field.key, String(valeurs[field.key] ?? "")])
   )

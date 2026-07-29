@@ -10,6 +10,7 @@ import { ExportDialog } from "./export-dialog"
 import { OcrUploadDialog } from "./ocr-upload-dialog"
 import { ValidateSessionButton } from "./validate-session-button"
 import { ConfirmAllEntriesButton } from "./confirm-all-entries-button"
+import { DeleteSessionButton } from "./delete-session-button"
 
 const STATUT_LABELS: Record<string, string> = {
   en_cours: "En cours",
@@ -25,7 +26,7 @@ export async function SessionDetail({
   id: string
 }) {
   const tractageSession = await prisma.tractageSession.findUnique({
-    where: { id },
+    where: { id, deletedAt: null },
     include: {
       template: {
         include: {
@@ -82,6 +83,10 @@ export async function SessionDetail({
               entries={tractageSession.entries}
             />
           )}
+          <DeleteSessionButton
+            sessionId={tractageSession.id}
+            basePath={basePath}
+          />
         </div>
       </div>
 

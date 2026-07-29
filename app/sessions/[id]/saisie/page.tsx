@@ -20,7 +20,7 @@ export default async function SaisiePage({
   const backHref = from || "/agents/sessions"
 
   const tractageSession = await prisma.tractageSession.findUnique({
-    where: { id },
+    where: { id, deletedAt: null },
     include: {
       template: {
         include: {
