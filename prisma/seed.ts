@@ -57,7 +57,7 @@ async function main() {
                 key: "telephone",
                 label: "Téléphone",
                 type: "tel",
-                requis: true,
+                requis: false,
                 ordre: 2,
               },
             ],
