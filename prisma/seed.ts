@@ -60,6 +60,13 @@ async function main() {
                 requis: false,
                 ordre: 2,
               },
+              {
+                key: "telephone_2",
+                label: "Téléphone 2",
+                type: "tel",
+                requis: false,
+                ordre: 3,
+              },
             ],
           },
         },
