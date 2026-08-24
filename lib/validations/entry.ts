@@ -1,6 +1,6 @@
 import type { Field } from "@/app/generated/prisma/client"
 
-const PHONE_REGEX = /^01[0-9]{8}$/
+export const PHONE_REGEX = /^01[0-9]{8}$/
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export type EntryValues = Record<string, string>

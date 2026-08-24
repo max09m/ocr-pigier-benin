@@ -9,7 +9,7 @@ import { requireAuth } from "@/lib/session"
 import { s3Client, STORAGE_BUCKET } from "@/lib/s3-client"
 import { mistral, OCR_MODEL, buildOcrSchema } from "@/lib/mistral"
 import { uploadRequestSchema } from "@/lib/validations/upload"
-import { normalizePhone } from "@/lib/validations/entry"
+import { normalizePhone, PHONE_REGEX } from "@/lib/validations/entry"
 
 type UploadUrlResult = { error: string } | { url: string; key: string }
 
@@ -97,12 +97,17 @@ export async function processOcrUpload(
         const valeurs: Record<string, string | number> = {}
         for (const field of fields) {
           const value = ligneValeurs[field.key]
-          if (value != null && value !== "") {
-            valeurs[field.key] =
-              field.type === "tel"
-                ? normalizePhone(String(value))
-                : (value as string | number)
+          if (value == null || value === "") continue
+
+          if (field.type === "tel") {
+            const normalized = normalizePhone(String(value))
+            if (PHONE_REGEX.test(normalized)) {
+              valeurs[field.key] = normalized
+            }
+            continue
           }
+
+          valeurs[field.key] = value as string | number
         }
 
         if (Object.keys(valeurs).length === 0) continue
