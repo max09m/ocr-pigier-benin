@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -11,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 import {
   Table,
   TableBody,
@@ -35,6 +37,21 @@ export function ExportDialog({
   entries: Entry[]
 }) {
   const [open, setOpen] = useState(false)
+  const [selectedKeys, setSelectedKeys] = useState(
+    () => new Set(fields.map((field) => field.key))
+  )
+
+  const visibleFields = fields.filter((field) => selectedKeys.has(field.key))
+  const exportHref = `/api/sessions/${sessionId}/export?fields=${encodeURIComponent([...selectedKeys].join(","))}`
+
+  function toggleKey(key: string, checked: boolean) {
+    setSelectedKeys((old) => {
+      const next = new Set(old)
+      if (checked) next.add(key)
+      else next.delete(key)
+      return next
+    })
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -55,26 +72,41 @@ export function ExportDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex flex-wrap gap-x-4 gap-y-2 rounded border p-3">
+          {fields.map((field) => (
+            <div key={field.key} className="flex items-center gap-2">
+              <Checkbox
+                id={`export-field-${field.key}`}
+                checked={selectedKeys.has(field.key)}
+                onCheckedChange={(checked) => toggleKey(field.key, !!checked)}
+              />
+              <Label
+                htmlFor={`export-field-${field.key}`}
+                className="text-sm font-normal"
+              >
+                {field.label}
+              </Label>
+            </div>
+          ))}
+        </div>
+
         <div className="max-h-80 overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>N°</TableHead>
-                {fields.map((field) => (
+                {visibleFields.map((field) => (
                   <TableHead key={field.key}>{field.label}</TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
               {entries.map((entry) => {
-                const valeurs = (entry.valeurs ?? {}) as Record<
-                  string,
-                  unknown
-                >
+                const valeurs = (entry.valeurs ?? {}) as Record<string, unknown>
                 return (
                   <TableRow key={entry.id}>
                     <TableCell>{entry.ligne}</TableCell>
-                    {fields.map((field) => (
+                    {visibleFields.map((field) => (
                       <TableCell key={field.key}>
                         {formatFieldValue(field, valeurs[field.key])}
                       </TableCell>
@@ -88,13 +120,9 @@ export function ExportDialog({
 
         <DialogFooter>
           <Button
+            disabled={selectedKeys.size === 0}
             nativeButton={false}
-            render={
-              <a
-                href={`/api/sessions/${sessionId}/export`}
-                onClick={() => setOpen(false)}
-              />
-            }
+            render={<a href={exportHref} onClick={() => setOpen(false)} />}
           >
             <FileSpreadsheetIcon />
             Exporter

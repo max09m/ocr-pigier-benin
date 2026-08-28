@@ -11,7 +11,10 @@ export function buildOcrSchema(fields: Field[]) {
   for (const field of fields.filter((f) => f.actif)) {
     properties[field.key] = {
       type: field.type === "number" ? "number" : "string",
-      description: field.label,
+      description:
+        field.type === "date"
+          ? `${field.label} (format JJ/MM/AAAA)`
+          : field.label,
     }
   }
 

@@ -228,6 +228,31 @@ export async function deleteEntry(
   return {}
 }
 
+type DeleteEntriesResult = ActionResult & { deleted?: number }
+
+export async function deleteEntries(
+  entryIds: string[],
+  sessionId: string
+): Promise<DeleteEntriesResult> {
+  await requireAuth()
+
+  if (entryIds.length === 0) {
+    return { error: "Aucune entrée sélectionnée" }
+  }
+
+  const result = await prisma.entry.deleteMany({
+    where: { id: { in: entryIds }, sessionId },
+  })
+
+  revalidatePath(`/admin/sessions/${sessionId}`)
+  revalidatePath(`/agents/sessions/${sessionId}`)
+  revalidatePath(`/admin/preinscriptions/${sessionId}`)
+  revalidatePath(`/sessions/${sessionId}/saisie`)
+  revalidatePath("/admin/verification")
+
+  return { deleted: result.count }
+}
+
 export async function deleteSession(sessionId: string): Promise<ActionResult> {
   await requireAuth()
 

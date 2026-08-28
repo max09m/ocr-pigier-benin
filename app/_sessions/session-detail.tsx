@@ -117,6 +117,7 @@ export async function SessionDetail({
           </div>
           <EntriesTable
             sessionId={tractageSession.id}
+            templateId={tractageSession.templateId}
             fields={activeFields}
             entries={tractageSession.entries}
           />
@@ -136,6 +137,7 @@ export async function SessionDetail({
           </div>
           <EntriesTable
             sessionId={tractageSession.id}
+            templateId={tractageSession.templateId}
             fields={activeFields}
             entries={tractageSession.entries}
           />

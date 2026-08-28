@@ -55,6 +55,7 @@ export default async function SaisiePage({
 
       <EntriesTable
         sessionId={tractageSession.id}
+        templateId={tractageSession.templateId}
         fields={activeFields}
         entries={tractageSession.entries}
       />

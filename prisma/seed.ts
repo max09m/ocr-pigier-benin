@@ -41,34 +41,40 @@ async function main() {
       )
     } else {
       const template = await prisma.template.create({
+        data: { nom: templateNom, annee: templateAnnee },
+      })
+      // Champs créés un par un (et non via un `create` imbriqué avec des
+      // types d'enum mélangés) : un `create` imbriqué avec plusieurs types
+      // de champ différents dans le même batch a déjà silencieusement
+      // enregistré "text" pour tous les champs au lieu du type demandé.
+      await prisma.field.create({
         data: {
-          nom: templateNom,
-          annee: templateAnnee,
-          fields: {
-            create: [
-              {
-                key: "nom_prenom",
-                label: "Nom & Prénom",
-                type: "text",
-                requis: true,
-                ordre: 1,
-              },
-              {
-                key: "telephone",
-                label: "Téléphone",
-                type: "tel",
-                requis: false,
-                ordre: 2,
-              },
-              {
-                key: "telephone_2",
-                label: "Téléphone 2",
-                type: "tel",
-                requis: false,
-                ordre: 3,
-              },
-            ],
-          },
+          templateId: template.id,
+          key: "nom_prenom",
+          label: "Nom & Prénom",
+          type: "text",
+          requis: true,
+          ordre: 1,
+        },
+      })
+      await prisma.field.create({
+        data: {
+          templateId: template.id,
+          key: "telephone",
+          label: "Téléphone",
+          type: "tel",
+          requis: false,
+          ordre: 2,
+        },
+      })
+      await prisma.field.create({
+        data: {
+          templateId: template.id,
+          key: "telephone_2",
+          label: "Téléphone 2",
+          type: "tel",
+          requis: false,
+          ordre: 3,
         },
       })
       console.log(`Template créé : ${template.nom} (${template.id})`)
@@ -87,71 +93,74 @@ async function main() {
       )
     } else {
       const preinscription = await prisma.template.create({
-        data: {
-          nom: preinscriptionNom,
-          annee: preinscriptionAnnee,
-          fields: {
-            create: [
-              {
-                key: "date",
-                label: "Date",
-                type: "date",
-                requis: false,
-                ordre: 1,
-              },
-              {
-                key: "nom_prenom",
-                label: "Nom & Prénoms",
-                type: "text",
-                requis: true,
-                ordre: 2,
-              },
-              {
-                key: "contact",
-                label: "Contact",
-                type: "tel",
-                requis: false,
-                ordre: 3,
-              },
-              {
-                key: "email",
-                label: "E-mail",
-                type: "email",
-                requis: false,
-                ordre: 4,
-              },
-              {
-                key: "classe",
-                label: "Classe",
-                type: "text",
-                requis: false,
-                ordre: 5,
-              },
-              {
-                key: "niveau_dernier_diplome",
-                label: "Niveau Dernier Diplôme",
-                type: "text",
-                requis: false,
-                ordre: 6,
-              },
-              {
-                key: "etablissement_origine",
-                label: "Établissement d'origine",
-                type: "text",
-                requis: false,
-                ordre: 7,
-              },
-              {
-                key: "canal_connaissance",
-                label: "Comment avez-vous connu Pigier Bénin",
-                type: "text",
-                requis: false,
-                ordre: 8,
-              },
-            ],
-          },
-        },
+        data: { nom: preinscriptionNom, annee: preinscriptionAnnee },
       })
+
+      const preinscriptionFields: {
+        key: string
+        label: string
+        type: "text" | "tel" | "email" | "date"
+        requis: boolean
+        ordre: number
+      }[] = [
+        { key: "date", label: "Date", type: "date", requis: false, ordre: 1 },
+        {
+          key: "nom_prenom",
+          label: "Nom & Prénoms",
+          type: "text",
+          requis: true,
+          ordre: 2,
+        },
+        {
+          key: "contact",
+          label: "Contact",
+          type: "tel",
+          requis: false,
+          ordre: 3,
+        },
+        {
+          key: "email",
+          label: "E-mail",
+          type: "email",
+          requis: false,
+          ordre: 4,
+        },
+        {
+          key: "classe",
+          label: "Classe",
+          type: "text",
+          requis: false,
+          ordre: 5,
+        },
+        {
+          key: "niveau_dernier_diplome",
+          label: "Niveau Dernier Diplôme",
+          type: "text",
+          requis: false,
+          ordre: 6,
+        },
+        {
+          key: "etablissement_origine",
+          label: "Établissement d'origine",
+          type: "text",
+          requis: false,
+          ordre: 7,
+        },
+        {
+          key: "canal_connaissance",
+          label: "Comment avez-vous connu Pigier Bénin",
+          type: "text",
+          requis: false,
+          ordre: 8,
+        },
+      ]
+
+      for (const field of preinscriptionFields) {
+        await prisma.field.create({
+          data: { templateId: preinscription.id, ...field },
+        })
+      }
+
       console.log(
         `Template créé : ${preinscription.nom} (${preinscription.id})`
       )

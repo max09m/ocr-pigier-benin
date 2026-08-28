@@ -7,6 +7,7 @@ import {
   getPaginationRowModel,
   useReactTable,
   type ColumnDef,
+  type VisibilityState,
 } from "@tanstack/react-table"
 import {
   Table,
@@ -24,6 +25,13 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -38,6 +46,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsRightIcon,
+  ChevronDownIcon,
+  Columns3Icon,
   UsersRoundIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -46,16 +56,19 @@ import { entryHasIssues } from "@/lib/validations/entry"
 import { EditEntryDialog } from "./edit-entry-dialog"
 import { ConfirmEntryButton } from "./confirm-entry-button"
 import { DeleteEntryButton } from "./delete-entry-button"
+import { DeleteEntriesButton } from "./delete-entries-button"
 import type { Entry, Field as FieldModel } from "@/app/generated/prisma/client"
 
 const PAGE_SIZES = [12, 20, 30, 50, 100, 200]
 
 export function EntriesTable({
   sessionId,
+  templateId,
   fields,
   entries,
 }: {
   sessionId: string
+  templateId: string
   fields: FieldModel[]
   entries: Entry[]
 }) {
@@ -63,11 +76,67 @@ export function EntriesTable({
     pageIndex: 0,
     pageSize: PAGE_SIZES[0],
   })
+  const [rowSelection, setRowSelection] = React.useState({})
+
+  // Colonnes affichées : préférence personnelle, mémorisée par template
+  // dans le navigateur (n'affecte pas les autres utilisateurs).
+  const columnVisibilityKey = `pigier:colonnes:${templateId}`
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({})
+
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem(columnVisibilityKey)
+      setColumnVisibility(stored ? JSON.parse(stored) : {})
+    } catch {
+      setColumnVisibility({})
+    }
+  }, [columnVisibilityKey])
+
+  function handleColumnVisibilityChange(
+    updater: VisibilityState | ((old: VisibilityState) => VisibilityState)
+  ) {
+    setColumnVisibility((old) => {
+      const next = typeof updater === "function" ? updater(old) : updater
+      try {
+        localStorage.setItem(columnVisibilityKey, JSON.stringify(next))
+      } catch {
+        // localStorage indisponible (navigation privée...) : tant pis, la
+        // préférence ne sera simplement pas mémorisée.
+      }
+      return next
+    })
+  }
 
   const columns = React.useMemo<ColumnDef<Entry>[]>(
     () => [
       {
+        id: "select",
+        enableHiding: false,
+        header: ({ table }) => (
+          <Checkbox
+            checked={table.getIsAllPageRowsSelected()}
+            indeterminate={
+              table.getIsSomePageRowsSelected() &&
+              !table.getIsAllPageRowsSelected()
+            }
+            onCheckedChange={(value) =>
+              table.toggleAllPageRowsSelected(!!value)
+            }
+            aria-label="Tout sélectionner"
+          />
+        ),
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(value) => row.toggleSelected(!!value)}
+            aria-label="Sélectionner la ligne"
+          />
+        ),
+      },
+      {
         id: "ligne",
+        enableHiding: false,
         header: "N°",
         cell: ({ row }) => row.original.ligne,
       },
@@ -84,6 +153,7 @@ export function EntriesTable({
       })),
       {
         id: "actions",
+        enableHiding: false,
         header: () => <div className="text-right">Actions</div>,
         cell: ({ row }) => (
           <div className="flex justify-end gap-1.5">
@@ -112,11 +182,17 @@ export function EntriesTable({
   const table = useReactTable({
     data: entries,
     columns,
-    state: { pagination },
+    state: { pagination, rowSelection, columnVisibility },
+    getRowId: (row) => row.id,
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    onColumnVisibilityChange: handleColumnVisibilityChange,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
   })
+
+  const selectedIds = Object.keys(rowSelection)
 
   if (entries.length === 0) {
     return (
@@ -136,6 +212,44 @@ export function EntriesTable({
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between gap-2">
+        {selectedIds.length > 0 && (
+          <div className="flex flex-1 items-center justify-between rounded border bg-muted/50 px-3 py-2">
+            <span className="text-sm font-medium">
+              {selectedIds.length} entrée(s) sélectionnée(s)
+            </span>
+            <DeleteEntriesButton
+              sessionId={sessionId}
+              entryIds={selectedIds}
+              onDeleted={() => setRowSelection({})}
+            />
+          </div>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<Button variant="outline" size="sm" className="ml-auto" />}
+          >
+            <Columns3Icon data-icon="inline-start" />
+            Colonnes
+            <ChevronDownIcon data-icon="inline-end" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {table
+              .getAllColumns()
+              .filter((column) => column.getCanHide())
+              .map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                >
+                  {fields.find((field) => field.key === column.id)?.label ??
+                    column.id}
+                </DropdownMenuCheckboxItem>
+              ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
       <div className="overflow-hidden rounded border">
         <Table>
           <TableHeader className="bg-muted">

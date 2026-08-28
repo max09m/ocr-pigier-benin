@@ -2,6 +2,8 @@ import type { Field } from "@/app/generated/prisma/client"
 
 export const PHONE_REGEX = /^01[0-9]{8}$/
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const DATE_ISO_REGEX = /^(\d{4})-(\d{2})-(\d{2})$/
+const DATE_DMY_REGEX = /^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/
 
 export type EntryValues = Record<string, string>
 
@@ -29,6 +31,41 @@ export function normalizePhone(raw: string) {
   }
 
   return digits
+}
+
+function isValidYmd(year: number, month: number, day: number) {
+  const date = new Date(year, month - 1, day)
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  )
+}
+
+// Convertit une date saisie/lue (ISO ou JJ/MM/AAAA, JJ/MM/AA...) au format
+// canonique ISO (AAAA-MM-JJ), pour garder un seul format en base quelle que
+// soit la source (OCR, saisie tablette). Retourne "" si non reconnaissable.
+export function normalizeDate(raw: string) {
+  const trimmed = raw.trim()
+  if (!trimmed) return ""
+
+  const isoMatch = trimmed.match(DATE_ISO_REGEX)
+  if (isoMatch) {
+    const [, y, m, d] = isoMatch
+    return isValidYmd(Number(y), Number(m), Number(d)) ? trimmed : ""
+  }
+
+  const dmyMatch = trimmed.match(DATE_DMY_REGEX)
+  if (dmyMatch) {
+    const [, d, m, y] = dmyMatch
+    const day = Number(d)
+    const month = Number(m)
+    const year = y.length === 2 ? 2000 + Number(y) : Number(y)
+    if (!isValidYmd(year, month, day)) return ""
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
+  }
+
+  return ""
 }
 
 export function validateEntry(
@@ -76,10 +113,11 @@ export function validateEntry(
         break
       }
       case "date": {
-        if (Number.isNaN(Date.parse(raw))) {
+        const normalized = normalizeDate(raw)
+        if (!normalized) {
           errors[field.key] = "Date invalide"
         } else {
-          data[field.key] = raw
+          data[field.key] = normalized
         }
         break
       }

@@ -2,10 +2,10 @@ import ExcelJS from "exceljs"
 import { revalidatePath } from "next/cache"
 import prisma from "@/lib/prisma"
 import { requireAuth } from "@/lib/session"
-import { formatPhoneDisplay } from "@/lib/format"
+import { formatPhoneDisplay, formatDateDisplay } from "@/lib/format"
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   await requireAuth()
@@ -28,7 +28,17 @@ export async function GET(
     return Response.json({ error: "Session introuvable" }, { status: 404 })
   }
 
-  const fields = tractageSession.template.fields
+  // Colonnes à inclure dans l'export, choisies dans la fenêtre d'export ;
+  // par défaut (paramètre absent), on exporte tous les champs actifs.
+  const selectedKeysParam = new URL(request.url).searchParams.get("fields")
+  const selectedKeys = selectedKeysParam
+    ? new Set(selectedKeysParam.split(","))
+    : null
+  const fields = selectedKeys
+    ? tractageSession.template.fields.filter((field) =>
+        selectedKeys.has(field.key)
+      )
+    : tractageSession.template.fields
 
   const workbook = new ExcelJS.Workbook()
   const sheet = workbook.addWorksheet(
@@ -51,7 +61,9 @@ export async function GET(
       ...fields.map((field) => {
         const value = valeurs[field.key]
         if (value == null || value === "") return ""
-        return field.type === "tel" ? formatPhoneDisplay(String(value)) : value
+        if (field.type === "tel") return formatPhoneDisplay(String(value))
+        if (field.type === "date") return formatDateDisplay(String(value))
+        return value
       }),
     ])
   }

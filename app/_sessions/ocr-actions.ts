@@ -9,7 +9,11 @@ import { requireAuth } from "@/lib/session"
 import { s3Client, STORAGE_BUCKET } from "@/lib/s3-client"
 import { mistral, OCR_MODEL, buildOcrSchema } from "@/lib/mistral"
 import { uploadRequestSchema } from "@/lib/validations/upload"
-import { normalizePhone, PHONE_REGEX } from "@/lib/validations/entry"
+import {
+  normalizePhone,
+  normalizeDate,
+  PHONE_REGEX,
+} from "@/lib/validations/entry"
 
 type UploadUrlResult = { error: string } | { url: string; key: string }
 
@@ -102,6 +106,14 @@ export async function processOcrUpload(
           if (field.type === "tel") {
             const normalized = normalizePhone(String(value))
             if (PHONE_REGEX.test(normalized)) {
+              valeurs[field.key] = normalized
+            }
+            continue
+          }
+
+          if (field.type === "date") {
+            const normalized = normalizeDate(String(value))
+            if (normalized) {
               valeurs[field.key] = normalized
             }
             continue
