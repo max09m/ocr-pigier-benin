@@ -59,7 +59,7 @@ import { DeleteEntryButton } from "./delete-entry-button"
 import { DeleteEntriesButton } from "./delete-entries-button"
 import type { Entry, Field as FieldModel } from "@/app/generated/prisma/client"
 
-const PAGE_SIZES = [12, 20, 30, 50, 100, 200]
+const PAGE_SIZES = [12, 20, 30, 50, 100, 200, 300]
 
 export function EntriesTable({
   sessionId,
