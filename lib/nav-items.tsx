@@ -4,6 +4,7 @@ import {
   ScanTextIcon,
   LayoutTemplateIcon,
   UsersIcon,
+  UserPlusIcon,
 } from "lucide-react"
 
 export type NavItem = {
@@ -27,6 +28,11 @@ export const ADMIN_NAV_ITEMS: NavItem[] = [
     title: "Vérification OCR",
     url: "/admin/verification",
     icon: <ScanTextIcon />,
+  },
+  {
+    title: "Fiche préinscription",
+    url: "/admin/preinscriptions",
+    icon: <UserPlusIcon />,
   },
   {
     title: "Templates",

@@ -13,7 +13,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { DatePicker } from "@/components/ui/date-picker"
 import {
@@ -36,9 +41,11 @@ import type { Template } from "@/app/generated/prisma/client"
 export function CreateSessionDialog({
   basePath,
   templates,
+  dialogTitle = "Nouvelle session de tractage",
 }: {
   basePath: string
   templates: Template[]
+  dialogTitle?: string
 }) {
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -86,7 +93,7 @@ export function CreateSessionDialog({
       />
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Nouvelle session de tractage</DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
         </DialogHeader>
 
         {templates.length === 0 ? (

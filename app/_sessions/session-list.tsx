@@ -33,15 +33,32 @@ const STATUT_VARIANTS: Record<string, "default" | "secondary" | "outline"> = {
   exporte: "default",
 }
 
-export async function SessionList({ basePath }: { basePath: string }) {
+export async function SessionList({
+  basePath,
+  templateNom,
+  title = "Sessions de tractage",
+  description = "Une session correspond à une feuille remplie pour un établissement et une date.",
+  emptyDescription = "Crée une session pour commencer à collecter des contacts sur un établissement.",
+  createDialogTitle,
+}: {
+  basePath: string
+  templateNom?: string
+  title?: string
+  description?: string
+  emptyDescription?: string
+  createDialogTitle?: string
+}) {
   const [sessions, templates] = await Promise.all([
     prisma.tractageSession.findMany({
-      where: { deletedAt: null },
+      where: {
+        deletedAt: null,
+        ...(templateNom ? { template: { nom: templateNom } } : {}),
+      },
       orderBy: { createdAt: "desc" },
       include: { template: true, _count: { select: { entries: true } } },
     }),
     prisma.template.findMany({
-      where: { actif: true },
+      where: { actif: true, ...(templateNom ? { nom: templateNom } : {}) },
       orderBy: { nom: "asc" },
     }),
   ])
@@ -50,14 +67,15 @@ export async function SessionList({ basePath }: { basePath: string }) {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Sessions de tractage</h1>
-          <p className="text-sm text-muted-foreground">
-            Une session correspond à une feuille remplie pour un établissement
-            et une date.
-          </p>
+          <h1 className="text-xl font-semibold">{title}</h1>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
         {sessions.length > 0 && (
-          <CreateSessionDialog basePath={basePath} templates={templates} />
+          <CreateSessionDialog
+            basePath={basePath}
+            templates={templates}
+            dialogTitle={createDialogTitle}
+          />
         )}
       </div>
 
@@ -68,13 +86,14 @@ export async function SessionList({ basePath }: { basePath: string }) {
               <ClipboardListIcon />
             </EmptyMedia>
             <EmptyTitle>Aucune session</EmptyTitle>
-            <EmptyDescription>
-              Crée une session pour commencer à collecter des contacts sur un
-              établissement.
-            </EmptyDescription>
+            <EmptyDescription>{emptyDescription}</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <CreateSessionDialog basePath={basePath} templates={templates} />
+            <CreateSessionDialog
+              basePath={basePath}
+              templates={templates}
+              dialogTitle={createDialogTitle}
+            />
           </EmptyContent>
         </Empty>
       ) : (

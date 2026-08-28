@@ -21,9 +21,11 @@ const STATUT_LABELS: Record<string, string> = {
 export async function SessionDetail({
   basePath,
   id,
+  backLabel = "Sessions de tractage",
 }: {
   basePath: string
   id: string
+  backLabel?: string
 }) {
   const tractageSession = await prisma.tractageSession.findUnique({
     where: { id, deletedAt: null },
@@ -53,7 +55,7 @@ export async function SessionDetail({
         className="flex items-center gap-1 text-sm text-muted-foreground hover:underline"
       >
         <ArrowLeftIcon className="size-3.5" />
-        Sessions de tractage
+        {backLabel}
       </Link>
 
       <div className="flex items-center justify-between gap-2">

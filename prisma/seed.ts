@@ -73,6 +73,89 @@ async function main() {
       })
       console.log(`Template créé : ${template.nom} (${template.id})`)
     }
+
+    const preinscriptionNom = "Fiche préinscription"
+    const preinscriptionAnnee = 2026
+
+    const existingPreinscription = await prisma.template.findFirst({
+      where: { nom: preinscriptionNom, annee: preinscriptionAnnee },
+    })
+
+    if (existingPreinscription) {
+      console.log(
+        `Le template "${preinscriptionNom}" (${preinscriptionAnnee}) existe déjà, rien à faire.`
+      )
+    } else {
+      const preinscription = await prisma.template.create({
+        data: {
+          nom: preinscriptionNom,
+          annee: preinscriptionAnnee,
+          fields: {
+            create: [
+              {
+                key: "date",
+                label: "Date",
+                type: "date",
+                requis: false,
+                ordre: 1,
+              },
+              {
+                key: "nom_prenom",
+                label: "Nom & Prénoms",
+                type: "text",
+                requis: true,
+                ordre: 2,
+              },
+              {
+                key: "contact",
+                label: "Contact",
+                type: "tel",
+                requis: false,
+                ordre: 3,
+              },
+              {
+                key: "email",
+                label: "E-mail",
+                type: "email",
+                requis: false,
+                ordre: 4,
+              },
+              {
+                key: "classe",
+                label: "Classe",
+                type: "text",
+                requis: false,
+                ordre: 5,
+              },
+              {
+                key: "niveau_dernier_diplome",
+                label: "Niveau Dernier Diplôme",
+                type: "text",
+                requis: false,
+                ordre: 6,
+              },
+              {
+                key: "etablissement_origine",
+                label: "Établissement d'origine",
+                type: "text",
+                requis: false,
+                ordre: 7,
+              },
+              {
+                key: "canal_connaissance",
+                label: "Comment avez-vous connu Pigier Bénin",
+                type: "text",
+                requis: false,
+                ordre: 8,
+              },
+            ],
+          },
+        },
+      })
+      console.log(
+        `Template créé : ${preinscription.nom} (${preinscription.id})`
+      )
+    }
   } finally {
     await prisma.$disconnect()
   }
